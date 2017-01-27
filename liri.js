@@ -1,7 +1,10 @@
 var keys = require ('./keys.js');
 var request = require('request');
+var spotifyData = require('spotify');
+var omdb = require('omdb');
 var command = process.argv[2];
 var value = process.argv[3];
+var limit = 5;
 
 // console.log(keys.twitterKeys);
 //Will show the last 20 tweets and the date they were created
@@ -16,21 +19,30 @@ function myTweets(){
 function spotify() {
 	var songDefault = 'The Sign';
 	var artistDefault = 'Aces of base';
-
-	// https://api.spotify.com/v1/search?type=track,artist&market=US&limit=10"
-	var song = process.argv[3];
-
-	var spotify = require('spotify');
-	 
-	spotify.search({ type: 'track', query: songDefault }, function(err, data) {
+	//Evaluation of user input, if undefined we assign a default song
+	if(value == undefined){
+		song = songDefault;
+	}
+	else{
+		song = value;
+	}
+	//Call the RPM funtion to search the song 
+	spotifyData.search({ type: 'track', query: song}, function(err, data) {
 	    if ( err ) {
 	        console.log('Error occurred: ' + err);
 	        return;
 	    }
-	    // console.log('Check it out: ' + data);
-	    // console.log(JSON.stringify(data, null, 2));
-	    var body = JSON.parse (data);
-	    console.log('Check it out: ' + data);
+	    var formatted = JSON.stringify(data, null, 2);
+	    console.log('I found this many songs:\n');
+	    for (var i = 0; i < limit; i++) {
+	    	// console.log(data.tracks.items[i]);
+	    	console.log('Song ' + (i+1) + ':')
+	    	console.log('Artist: ' + data.tracks.items[i].artists[0].name);
+	    	console.log('Song Name: ' + data.tracks.items[i].name);
+	    	console.log('Album Name: ' + data.tracks.items[i].album.name);
+	    	console.log('PReview Link: ' + data.tracks.items[i].preview_url);
+	    	console.log('-------------------------')
+	    }
 	});
 	return;
 }//End Spotify function
@@ -39,25 +51,35 @@ function spotify() {
 //Title, year, rating, Country, Language, plot, Actors, Rotten Tomatos rating and URL
 //by Defaut 'Mr. Nobody'
 function movieInfo(){
-	var localDefault = 'Mr. Nobody';
-	var movieName = process.argv[3];
-	console.log('Your Movie info: ')
-	var queryUrl = "http://www.omdbapi.com/?t=" + localDefault + "&y=&plot=short&tomatoes=true&r=json";
+	var movieDefault = 'Mr. Nobody';
+	//Evaluation of user input, if undefined we assign a default song
+	if(value == undefined){
+		movieName = movieDefault;
+	}
+	else{
+		movieName = value;
+	}
+	//Call the RPM funtion to search the song 
+	omdb.get(movieName, {tomatoes: true}, function(err, movies) {
+	    if(err) {
+	        return console.error(err);
+	    }
+	    if(movies.length < 1) {
+	        return console.log('No movies were found!');
+	    }
+	    console.log('Check this Movie:');
+		console.log('Title of the movie: ' + movies.title );
+		console.log('Year the movie came out: ' + movies.year );
+		console.log('IMDB Rating of the movie: ' + movies.imdb.rating);
+		console.log('Country where the movie was produced: ' + movies.countries);
+		//not included in the RPM
+		console.log('Language of the movie: ' + movies.languages );
+		console.log('Plot of the movie: ' + movies.plot );
+		console.log('Actors in the movie: ' + movies.actors );
+		console.log('Rotten Tomatoes Rating: ' + movies.tomato.rating );
+		console.log('Rotten Tomatoes URL: ' + movies.tomato.url);
+	    console.log('-------------------------')
 
-	// Then create a request to the queryUrl
-	// ...
-	request(queryUrl, function(error, response, body) {
-	    var body = JSON.parse (body);
-	    console.log (body)
-		console.log('Title of the movie: ' + body.Title );
-		console.log('Year the movie came out: ' + body.Year );
-		console.log('IMDB Rating of the movie: ' + body.imdbRating );
-		console.log('Country where the movie was produced: ' + body.Country );
-		console.log('Language of the movie: ' + body.Language );
-		console.log('Plot of the movie: ' + body.Plot );
-		console.log('Actors in the movie: ' + body.Actors );
-		console.log('Rotten Tomatoes Rating: ' + body.tomatoRating );
-		console.log('Rotten Tomatoes URL: ' + body.tomatoURL );
 	});
 
 }//end Movie Info function
@@ -76,7 +98,7 @@ switch (command){
 		spotify(value);
 		break;
 	case 'movie-this':
-		movieInfo(value);
+		movieInfo();
 		break;
 	case 'do-what-it-says':
 		doWhatItSays();
